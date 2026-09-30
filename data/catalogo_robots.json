@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "fuente": "Especificaciones publicadas por Universal Robots y MiR (Teradyne Robotics). Verificar contra la ficha técnica vigente antes de citar en un contrato: los fabricantes actualizan payload/alcance entre generaciones y esto es una referencia de apoyo para el validador, no la fuente oficial.",
+  "brazos": [
+    {"modelo": "UR3e", "payload_kg": 3, "alcance_mm": 500},
+    {"modelo": "UR5e", "payload_kg": 5, "alcance_mm": 850},
+    {"modelo": "UR7e", "payload_kg": 7, "alcance_mm": 900, "nota": "Sustituye a UR5/UR5e en el catálogo vigente."},
+    {"modelo": "UR10e", "payload_kg": 10, "alcance_mm": 1300},
+    {"modelo": "UR12e", "payload_kg": 12, "alcance_mm": 1300, "nota": "Sustituye a UR10e en el catálogo vigente."},
+    {"modelo": "UR15", "payload_kg": 15, "alcance_mm": 1300},
+    {"modelo": "UR16e", "payload_kg": 16, "alcance_mm": 900},
+    {"modelo": "UR20", "payload_kg": 20, "alcance_mm": 1750},
+    {"modelo": "UR20e", "payload_kg": 20, "alcance_mm": 1750, "nota": "Alias comercial de UR20 usado en algunos reportes."},
+    {"modelo": "UR30", "payload_kg": 30, "alcance_mm": 1300},
+    {"modelo": "UR30e", "payload_kg": 30, "alcance_mm": 1300, "nota": "Alias comercial de UR30 usado en algunos reportes."}
+  ],
+  "amr": [
+    {"modelo": "MiR100", "payload_kg": 100, "nota": "Base móvil, sin brazo integrado."},
+    {"modelo": "MiR250", "payload_kg": 250, "nota": "Base móvil, sin brazo integrado."},
+    {"modelo": "MiR600", "payload_kg": 600, "nota": "Base móvil, sin brazo integrado."},
+    {"modelo": "MiR1350", "payload_kg": 1350, "nota": "Base móvil, sin brazo integrado."},
+    {"modelo": "MC250", "payload_kg_brazo": 12.5, "nota": "Mobile Cobot: AMR MiR250 + brazo UR integrado. El payload del brazo es aproximado y debe confirmarse contra la ficha vigente."},
+    {"modelo": "MC600", "payload_kg_brazo": 12.5, "nota": "Mobile Cobot: AMR MiR600 + brazo UR integrado. El payload del brazo es aproximado y debe confirmarse contra la ficha vigente."}
+  ],
+  "notas_validacion": [
+    "El validador usa este catálogo solo para 'advertencia', nunca para bloquear: un payload que excede por poco el límite del modelo citado puede ser correcto si se consideró el peso del gripper aparte, o incorrecto por un error de dedo. Se marca para que el usuario decida.",
+    "Cuando el texto menciona 'séptimo eje' o 'riel lineal', no se valida contra este catálogo: el robot se desplaza y el payload no cambia, pero el alcance efectivo sí, y eso no está modelado aquí."
+  ]
+}

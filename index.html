@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>TeraReport</title>
+<style>
+  :root {
+    --azul: #0b5fff; --azul-osc: #0846c4; --fondo: #f4f6fb; --tarjeta: #ffffff;
+    --texto: #1c2333; --tenue: #6b7280; --borde: #e2e6ef;
+    --ok: #17845a; --advertencia: #b46600; --error: #c0392b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--fondo); color: var(--texto);
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 16px; line-height: 1.4; padding-bottom: 90px;
+  }
+  header {
+    background: var(--azul); color: #fff; padding: 14px 16px;
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  header .sub { font-size: 11px; opacity: .85; }
+  #btnNuevo {
+    background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.4);
+    border-radius: 8px; padding: 7px 12px; font-size: 13px;
+  }
+  main { max-width: 720px; margin: 0 auto; padding: 12px; }
+  .tarjeta {
+    background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px;
+    padding: 14px; margin-bottom: 14px;
+  }
+  .tarjeta h2 { font-size: 15px; margin: 0 0 10px; color: var(--azul-osc); }
+  .fila { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  label { display: block; font-size: 12.5px; color: var(--tenue); margin: 10px 0 3px; }
+  input[type=text], input[type=file], textarea, select {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--borde); border-radius: 8px;
+    font-size: 15px; font-family: inherit; background: #fff; color: var(--texto);
+  }
+  textarea { resize: vertical; min-height: 46px; }
+  button {
+    background: var(--azul); color: #fff; border: none; border-radius: 8px;
+    padding: 11px 16px; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  button.secundario { background: #eef1f8; color: var(--azul-osc); }
+  button.peligro { background: #fdecea; color: var(--error); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.chico { padding: 6px 10px; font-size: 13px; font-weight: 500; }
+  #estado {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    background: #10182b; color: #fff; font-size: 13px; padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  #estado.oculto { display: none; }
+  .spinner {
+    width: 14px; height: 14px; border-radius: 50%; flex: none;
+    border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+    animation: girar .8s linear infinite;
+  }
+  @keyframes girar { to { transform: rotate(360deg); } }
+  details.estacion { border: 1px solid var(--borde); border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
+  details.estacion > summary { padding: 10px 12px; background: #f7f9fd; cursor: pointer; list-style: none; }
+  details.estacion > summary::-webkit-details-marker { display: none; }
+  .resumen-est { display: flex; align-items: center; gap: 8px; }
+  .resumen-est input[type=text] { flex: 1; border: none; background: transparent; font-weight: 600; padding: 2px 4px; }
+  .resumen-est .contador { font-size: 12px; color: var(--tenue); white-space: nowrap; }
+  .cuerpo-estacion { padding: 6px 10px 10px; }
+  details.seccion { border-top: 1px dashed var(--borde); padding: 6px 0; }
+  details.seccion > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+  details.seccion > summary::-webkit-details-marker { display: none; }
+  details.seccion > summary input[type=text] { flex: 1; font-weight: 600; font-size: 13.5px; border: none; background: transparent; }
+  .vineta { border: 1px solid var(--borde); border-radius: 8px; padding: 8px; margin: 6px 0 6px 20px; background: #fcfdff; }
+  .vineta.deshabilitada { opacity: .45; }
+  .vineta-top { display: flex; align-items: flex-start; gap: 8px; }
+  .vineta-top > div { flex: 1; }
+  .vineta input[type=text] { font-weight: 600; margin-bottom: 4px; font-size: 13.5px; }
+  .badge { font-size: 10.5px; background: #eaf1ff; color: var(--azul-osc); border-radius: 6px; padding: 1px 6px; margin-left: 6px; }
+  .fotos-btn { font-size: 12px; margin-top: 6px; }
+  .toggle { flex: none; width: 20px; height: 20px; margin-top: 2px; }
+  .aviso { font-size: 13px; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; }
+  .aviso.info { background: #eaf1ff; color: var(--azul-osc); }
+  .aviso.warn { background: #fff6e5; color: var(--advertencia); }
+  .aviso.err { background: #fdecea; color: var(--error); }
+  .oculto { display: none !important; }
+  .campo-doble { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px) { .campo-doble { grid-template-columns: 1fr; } }
+  .vacio { color: var(--tenue); font-size: 13.5px; padding: 10px 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>TeraReport</h1>
+    <div class="sub">Plaud → reporte profesional, en el navegador</div>
+  </div>
+  <button id="btnNuevo" class="oculto">Nuevo reporte</button>
+</header>
+
+<main>
+
+  <div id="avisoInicio" class="tarjeta">
+    <h2>Cargando el motor…</h2>
+    <p style="font-size:13.5px;color:var(--tenue)">
+      La primera vez descarga el intérprete de Python (Pyodide) y las
+      librerías necesarias. Después queda en caché del navegador y arranca
+      mucho más rápido, incluso sin internet.
+    </p>
+  </div>
+
+  <div id="appOculta" class="oculto">
+
+    <section class="tarjeta">
+      <h2>1 · Reporte de Plaud</h2>
+      <input type="file" id="archivoPlaud" accept=".docx,.txt,.md">
+      <div class="fila" style="margin-top:10px">
+        <button id="btnEjemplo" class="secundario chico">Probar con el ejemplo</button>
+      </div>
+      <div id="resumenCarga" class="aviso info oculto" style="margin-top:10px"></div>
+    </section>
+
+    <section class="tarjeta" id="seccionDatos">
+      <h2>2 · Datos del reporte</h2>
+      <p style="font-size:12.5px;color:var(--tenue);margin:0 0 4px">
+        Esto no viene en el audio: captúralo antes de generar.
+      </p>
+      <div id="campos"></div>
+      <div class="fila" style="margin-top:10px">
+        <button id="btnGuardarDefaults" class="secundario chico">Guardar como predeterminados</button>
+      </div>
+    </section>
+
+    <section class="tarjeta" id="seccionContenido">
+      <h2>3 · Contenido</h2>
+      <input type="text" id="buscador" placeholder="Buscar en el contenido…" style="margin-bottom:10px">
+      <div id="arbol"><p class="vacio">Carga un reporte para ver su contenido aquí.</p></div>
+    </section>
+
+    <section class="tarjeta">
+      <h2>4 · Generar</h2>
+      <button id="btnGenerar" disabled style="width:100%">Generar reporte .docx</button>
+      <div id="resultadoGenerar" style="margin-top:10px"></div>
+    </section>
+
+  </div>
+
+</main>
+
+<div id="estado" class="oculto">
+  <div class="spinner"></div>
+  <span id="estadoTexto">Trabajando…</span>
+</div>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<script>
+'use strict';
+
+// -----------------------------------------------------------------------
+// Config: qué archivos del motor y de datos hay que llevar al FS virtual.
+// -----------------------------------------------------------------------
+const PY_MODULES = [
+  '__init__.py', 'model.py', 'parser.py', 'rules.py', 'textutil.py',
+  'profile.py', 'validate.py', 'library.py', 'docx_xml.py', 'docx_builder.py',
+  'jpeg_fix.py', 'summary.py', 'pipeline.py', 'settings.py', 'webapi.py',
+];
+const DATA_FILES = ['perfil_plaud.json', 'catalogo_robots.json', 'biblioteca_semilla.json'];
+
+const FORM_FIELDS = [
+  ['cliente', 'Cliente', 'Aparece en la portada, en mayúsculas.'],
+  ['ubicacion', 'Ubicación', 'Ciudad y país, p. ej. "Tijuana, México."'],
+  ['tipo_reporte', 'Tipo de reporte', 'Plant Assessment, Line Walk, etc.'],
+  ['fecha_visita', 'Fecha de la visita', 'Formato dd/mm/aaaa.'],
+  ['fecha_reporte', 'Fecha del reporte', 'Texto largo, p. ej. "11 de febrero del 2026".'],
+  ['encabezado_portada', 'Encabezado de portada', 'Encabezado de la primera página.'],
+  ['encabezado', 'Encabezado interior', 'Encabezado del resto de las páginas.'],
+  ['firma_mir', 'Firma MiR', 'Nombre y puesto de quien firma por MiR.'],
+  ['firma_ur', 'Firma UR', 'Nombre y puesto de quien firma por Universal Robots.'],
+  ['fecha_firma', 'Fecha de firma', 'Formato dd/mm/aaaa.'],
+];
+
+// Campos propios de UN cliente/visita: "Nuevo reporte" los limpia; el resto
+// (firma, tipo de reporte, encabezados) se conserva entre reportes, igual
+// que en la app de escritorio.
+const PER_REPORT_FIELDS = ['cliente', 'ubicacion', 'fecha_visita', 'fecha_reporte', 'fecha_firma'];
+
+let pyodide = null;
+let webapi = null;
+let currentReport = null;
+
+// -----------------------------------------------------------------------
+// utilidades de UI
+// -----------------------------------------------------------------------
+function setBusy(text) {
+  const el = document.getElementById('estado');
+  document.getElementById('estadoTexto').textContent = text || 'Trabajando…';
+  el.classList.remove('oculto');
+}
+function clearBusy() {
+  document.getElementById('estado').classList.add('oculto');
+}
+function showBanner(elId, kind, text) {
+  const el = document.getElementById(elId);
+  el.className = 'aviso ' + kind;
+  el.textContent = text;
+  el.classList.remove('oculto');
+}
+
+// Llama a una función Python de p2r.webapi, que siempre devuelve un STRING
+// JSON {"ok":true,"data":...} o {"ok":false,"error":"..."}. Lanza un Error
+// de JS si Python reporta ok:false, para poder usar try/catch normal.
+function callPy(name, ...args) {
+  const fn = webapi[name];
+  if (!fn) throw new Error('Función no encontrada en el motor: ' + name);
+  const raw = fn(...args);
+  const parsed = JSON.parse(raw);
+  if (!parsed.ok) throw new Error(parsed.error || ('Error en ' + name));
+  return parsed.data;
+}
+
+// -----------------------------------------------------------------------
+// arranque: Pyodide + lxml + python-docx + el motor + IDBFS persistente
+// -----------------------------------------------------------------------
+async function fetchBytes(url) {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('No pude descargar ' + url + ' (HTTP ' + resp.status + ')');
+  return new Uint8Array(await resp.arrayBuffer());
+}
+
+async function boot() {
+  try {
+    setBusy('Cargando Pyodide…');
+    pyodide = await loadPyodide();
+
+    setBusy('Cargando lxml…');
+    await pyodide.loadPackage(['lxml']);
+
+    setBusy('Instalando python-docx…');
+    await pyodide.loadPackage('micropip');
+    const micropip = pyodide.pyimport('micropip');
+    await micropip.install('python-docx');
+
+    setBusy('Descargando el motor de TeraReport…');
+    pyodide.FS.mkdirTree('/app/py/p2r');
+    pyodide.FS.mkdirTree('/app/data');
+    pyodide.FS.mkdirTree('/app/templates');
+    for (const name of PY_MODULES) {
+      pyodide.FS.writeFile('/app/py/p2r/' + name, await fetchBytes('py/p2r/' + name));
+    }
+    for (const name of DATA_FILES) {
+      pyodide.FS.writeFile('/app/data/' + name, await fetchBytes('data/' + name));
+    }
+    pyodide.FS.writeFile('/app/templates/plant_assessment.docx',
+      await fetchBytes('templates/plant_assessment.docx'));
+    // El ejemplo se descarga aparte y no bloquea el arranque si falla.
+    try {
+      pyodide.FS.writeFile('/app/data/plaud_ejemplo.docx',
+        await fetchBytes('data/plaud_ejemplo.docx'));
+    } catch (e) {
+      console.warn('No se pudo precargar el ejemplo:', e);
+      document.getElementById('btnEjemplo').disabled = true;
+    }
+
+    setBusy('Preparando tu carpeta de datos…');
+    pyodide.FS.mkdirTree('/data');
+    pyodide.FS.mount(pyodide.FS.filesystems.IDBFS, {}, '/data');
+    await new Promise((resolve, reject) => {
+      pyodide.FS.syncfs(true, (err) => err ? reject(err) : resolve());
+    });
+
+    pyodide.runPython("import sys\nif '/app/py' not in sys.path: sys.path.insert(0, '/app/py')");
+    webapi = pyodide.pyimport('p2r.webapi');
+    // Expuestos para depuración desde la consola del navegador (devtools).
+    // No los usa la interfaz misma, así que no hay riesgo para el usuario.
+    window.pyodide = pyodide;
+    window.webapi = webapi;
+    window.callPy = callPy;
+
+    const info = callPy('startup');
+    console.log('TeraReport listo:', info);
+
+    document.getElementById('avisoInicio').classList.add('oculto');
+    document.getElementById('appOculta').classList.remove('oculto');
+    document.getElementById('btnNuevo').classList.remove('oculto');
+
+    renderForm(info.config.datos);
+    wireEvents();
+    clearBusy();
+  } catch (err) {
+    console.error(err);
+    document.getElementById('avisoInicio').innerHTML =
+      '<h2 style="color:var(--error)">No se pudo cargar TeraReport</h2>' +
+      '<p style="font-size:13.5px">' + escapeHtml(String(err)) + '</p>' +
+      '<p style="font-size:12.5px;color:var(--tenue)">Revisa tu conexión e intenta recargar la página.</p>';
+    clearBusy();
+  }
+}
+
+// Guarda /data (IDBFS) en IndexedDB. Se llama después de cualquier operación
+// que haya escrito configuración, perfil o biblioteca — sin esto, los
+// cambios se perderían al cerrar la pestaña.
+function persist() {
+  pyodide.FS.syncfs(false, (err) => { if (err) console.error('No se pudo guardar en IndexedDB:', err); });
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text == null ? '' : String(text);
+  return div.innerHTML;
+}
+
+// -----------------------------------------------------------------------
+// formulario de datos del reporte
+// -----------------------------------------------------------------------
+function renderForm(datos) {
+  const cont = document.getElementById('campos');
+  cont.innerHTML = '';
+  for (const [key, label, hint] of FORM_FIELDS) {
+    const wrap = document.createElement('div');
+    wrap.innerHTML =
+      '<label>' + escapeHtml(label) + '</label>' +
+      '<input type="text" data-campo="' + key + '" value="' + escapeHtml(datos[key] || '') + '">' +
+      '<div style="font-size:11px;color:var(--tenue);margin-top:2px">' + escapeHtml(hint) + '</div>';
+    cont.appendChild(wrap);
+  }
+  cont.querySelectorAll('input[data-campo]').forEach((input) => {
+    input.addEventListener('blur', () => {
+      const patch = {};
+      patch[input.dataset.campo] = input.value.trim();
+      try {
+        callPy('update_datos', JSON.stringify(patch));
+        persist();
+      } catch (e) { console.error(e); }
+    });
+  });
+}
+
+// -----------------------------------------------------------------------
+// árbol de contenido
+// -----------------------------------------------------------------------
+function renderTree(report) {
+  currentReport = report;
+  const cont = document.getElementById('arbol');
+  cont.innerHTML = '';
+
+  if (!report || !report.stations || !report.stations.length) {
+    cont.innerHTML = '<p class="vacio">Este reporte no tiene estaciones reconocibles.</p>';
+    return;
+  }
+
+  const query = (document.getElementById('buscador').value || '').toLowerCase();
+  const matches = (text) => !query || (text || '').toLowerCase().includes(query);
+
+  for (const station of report.stations) {
+    const totalVinetas = station.sections.reduce((n, s) => n + s.bullets.length, 0);
+    const stationText = station.name_efectivo + ' ' + station.sections.map(
+      (s) => s.title_efectivo + ' ' + s.bullets.map((b) => b.label_efectivo + ' ' + b.text_efectivo).join(' ')
+    ).join(' ');
+    if (!matches(stationText)) continue;
+
+    const det = document.createElement('details');
+    det.className = 'estacion';
+    det.open = !!query;
+
+    const summary = document.createElement('summary');
+    summary.innerHTML =
+      '<div class="resumen-est">' +
+      '<input type="checkbox" class="toggle" ' + (station.enabled ? 'checked' : '') + '>' +
+      '<input type="text" value="' + escapeHtml(station.name_efectivo) + '">' +
+      '<span class="contador">' + totalVinetas + ' viñetas' +
+      (station.photos.length ? ' · ' + station.photos.length + ' foto(s)' : '') + '</span>' +
+      '</div>';
+    const chkStation = summary.querySelector('input[type=checkbox]');
+    const txtStation = summary.querySelector('input[type=text]');
+    chkStation.addEventListener('click', (e) => e.stopPropagation());
+    chkStation.addEventListener('change', () => {
+      try { callPy('set_enabled', station.uid, chkStation.checked); persist(); }
+      catch (e) { alert(e.message); }
+    });
+    txtStation.addEventListener('click', (e) => e.stopPropagation());
+    txtStation.addEventListener('blur', () => {
+      try { callPy('edit_station_name', station.uid, txtStation.value); persist(); }
+      catch (e) { alert(e.message); }
+    });
+    det.appendChild(summary);
+
+    const body = document.createElement('div');
+    body.className = 'cuerpo-estacion';
+    if (!station.enabled) det.style.opacity = '.55';
+
+    for (const section of station.sections) {
+      if (!section.bullets.length) continue;
+      const secDet = document.createElement('details');
+      secDet.className = 'seccion';
+      secDet.open = true;
+
+      const secSummary = document.createElement('summary');
+      secSummary.innerHTML =
+        '<input type="checkbox" class="toggle" ' + (section.enabled ? 'checked' : '') + '>' +
+        '<input type="text" value="' + escapeHtml(section.title_efectivo) + '">';
+      const chkSec = secSummary.querySelector('input[type=checkbox]');
+      const txtSec = secSummary.querySelector('input[type=text]');
+      chkSec.addEventListener('click', (e) => e.stopPropagation());
+      chkSec.addEventListener('change', () => {
+        try { callPy('set_enabled', section.uid, chkSec.checked); persist(); }
+        catch (e) { alert(e.message); }
+      });
+      txtSec.addEventListener('click', (e) => e.stopPropagation());
+      txtSec.addEventListener('blur', () => {
+        try { callPy('edit_section_title', section.uid, txtSec.value); persist(); }
+        catch (e) { alert(e.message); }
+      });
+      secDet.appendChild(secSummary);
+
+      for (const bullet of section.bullets) {
+        if (!matches(bullet.label_efectivo + ' ' + bullet.text_efectivo) && query) continue;
+        const bDiv = document.createElement('div');
+        bDiv.className = 'vineta' + (bullet.enabled ? '' : ' deshabilitada');
+        bDiv.innerHTML =
+          '<div class="vineta-top">' +
+          '<input type="checkbox" class="toggle" ' + (bullet.enabled ? 'checked' : '') + '>' +
+          '<div>' +
+          '<input type="text" data-campo="label" placeholder="Etiqueta (opcional)" value="' +
+            escapeHtml(bullet.label_efectivo) + '">' +
+          '<textarea data-campo="text">' + escapeHtml(bullet.text_efectivo) + '</textarea>' +
+          (bullet.editado ? '<span class="badge">editado a mano</span>' : '') +
+          '</div></div>';
+        const chkB = bDiv.querySelector('input[type=checkbox]');
+        const txtLabel = bDiv.querySelector('input[data-campo=label]');
+        const txtBody = bDiv.querySelector('textarea[data-campo=text]');
+        chkB.addEventListener('change', () => {
+          try { callPy('set_enabled', bullet.uid, chkB.checked); persist(); bDiv.classList.toggle('deshabilitada', !chkB.checked); }
+          catch (e) { alert(e.message); }
+        });
+        const commit = () => {
+          try { callPy('edit_bullet', bullet.uid, txtLabel.value, txtBody.value); persist(); }
+          catch (e) { alert(e.message); }
+        };
+        txtLabel.addEventListener('blur', commit);
+        txtBody.addEventListener('blur', commit);
+        secDet.appendChild(bDiv);
+      }
+      body.appendChild(secDet);
+    }
+    det.appendChild(body);
+    cont.appendChild(det);
+  }
+
+  if (!cont.children.length) {
+    cont.innerHTML = '<p class="vacio">Nada coincide con la búsqueda.</p>';
+  }
+}
+
+// -----------------------------------------------------------------------
+// cargar un reporte (subido o de ejemplo)
+// -----------------------------------------------------------------------
+async function loadReportFromBytes(bytes, virtualName) {
+  const path = '/tmp/' + virtualName;
+  pyodide.FS.mkdirTree('/tmp');
+  pyodide.FS.writeFile(path, bytes);
+  setBusy('Leyendo el reporte…');
+  try {
+    const result = callPy('load_report_from_path', path);
+    renderForm(result.datos);
+    renderTree(result.reporte);
+    document.getElementById('btnGenerar').disabled = false;
+    document.getElementById('resultadoGenerar').innerHTML = '';
+    showBanner('resumenCarga', 'info',
+      'Cargado: ' + result.resumen.estaciones + ' estaciones, ' +
+      result.resumen.vinetas + ' viñetas, ' + result.resumen.robots + ' modelos de robot, ' +
+      result.resumen.notas + ' nota(s).');
+    if (result.avisos && result.avisos.length) {
+      showBanner('resumenCarga', 'warn', result.avisos.join(' '));
+    }
+  } finally {
+    clearBusy();
+  }
+}
+
+function wireEvents() {
+  document.getElementById('archivoPlaud').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    try { await loadReportFromBytes(bytes, file.name); }
+    catch (err) { showBanner('resumenCarga', 'err', 'No pude leer el reporte: ' + err.message); clearBusy(); }
+  });
+
+  document.getElementById('btnEjemplo').addEventListener('click', async () => {
+    try {
+      setBusy('Cargando el ejemplo…');
+      const bytes = pyodide.FS.readFile('/app/data/plaud_ejemplo.docx');
+      await loadReportFromBytes(bytes, 'plaud_ejemplo.docx');
+    } catch (err) { showBanner('resumenCarga', 'err', 'No pude cargar el ejemplo: ' + err.message); clearBusy(); }
+  });
+
+  document.getElementById('buscador').addEventListener('input', () => {
+    if (currentReport) renderTree(currentReport);
+  });
+
+  document.getElementById('btnGuardarDefaults').addEventListener('click', () => {
+    try { callPy('save_defaults'); persist(); alert('Guardado como predeterminado.'); }
+    catch (e) { alert(e.message); }
+  });
+
+  document.getElementById('btnNuevo').addEventListener('click', () => {
+    const huboAlgo = currentReport || PER_REPORT_FIELDS.some(
+      (k) => document.querySelector('[data-campo="' + k + '"]') &&
+             document.querySelector('[data-campo="' + k + '"]').value.trim());
+    if (huboAlgo && !confirm(
+      '¿Empezar un reporte nuevo?\n\nSe va a limpiar el reporte cargado y los ' +
+      'datos propios de este cliente (nombre, ubicación, fechas). Si no has ' +
+      'generado el .docx todavía, ese trabajo se pierde.\n\nTu firma, el tipo ' +
+      'de reporte y los encabezados guardados no se tocan.')) {
+      return;
+    }
+    try {
+      const result = callPy('reset_report');
+      persist();
+      currentReport = null;
+      document.getElementById('archivoPlaud').value = '';
+      document.getElementById('resumenCarga').classList.add('oculto');
+      document.getElementById('resultadoGenerar').innerHTML = '';
+      document.getElementById('btnGenerar').disabled = true;
+      renderForm(result.datos);
+      renderTree(null);
+    } catch (e) { alert(e.message); }
+  });
+
+  document.getElementById('btnGenerar').addEventListener('click', async () => {
+    setBusy('Generando el reporte…');
+    try {
+      const outPath = '/tmp/reporte_generado.docx';
+      const result = callPy('generate', outPath);
+      const bytes = pyodide.FS.readFile(outPath);
+      const blob = new Blob([bytes],
+        { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      const url = URL.createObjectURL(blob);
+      const nombre = (document.querySelector('[data-campo=cliente]').value || 'reporte')
+        .replace(/[\\/:*?"<>|]/g, '') + ' - ' +
+        (document.querySelector('[data-campo=tipo_reporte]').value || 'TeraReport') + '.docx';
+      const a = document.createElement('a');
+      a.href = url; a.download = nombre; document.body.appendChild(a); a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      document.getElementById('resultadoGenerar').innerHTML =
+        '<div class="aviso info">Listo: ' + result.estaciones + ' estación(es) incluidas' +
+        (result.resumen_ejecutivo ? ', con resumen ejecutivo' : '') +
+        (result.tabla_robots ? ', con tabla de robots' : '') + '. Se descargó como <b>' +
+        escapeHtml(nombre) + '</b>.</div>';
+    } catch (err) {
+      document.getElementById('resultadoGenerar').innerHTML =
+        '<div class="aviso err">No se pudo generar: ' + escapeHtml(err.message) + '</div>';
+    } finally {
+      clearBusy();
+    }
+  });
+}
+
+boot();
+</script>
+</body>
+</html>

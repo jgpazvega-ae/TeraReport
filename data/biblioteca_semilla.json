@@ -1,0 +1,153 @@
+{
+  "origen": {
+    "plaud": "plaud_ejemplo.docx",
+    "final": "reporte_final_ejemplo.docx"
+  },
+  "fragmentos": [
+    {
+      "seccion_destino": "Resumen de la Aplicación",
+      "etiqueta": "Modelo de Robot AMR Recomendado:",
+      "texto": "MiR MC250",
+      "etiqueta_nueva": true,
+      "despues_de": "Modelo de Robot Recomendado:",
+      "veces": 1,
+      "estaciones": [
+        "Alimentación y Descarga Automática de Hornos con Manipulador Móvil (MIR (AMR) + Cobot)"
+      ]
+    },
+    {
+      "seccion_destino": "Retos / Consideraciones",
+      "etiqueta": "",
+      "texto": "Navegación en pasillos compartidos, verificar con layout tamaño de los pasillos.",
+      "etiqueta_nueva": false,
+      "despues_de": "",
+      "veces": 1,
+      "estaciones": [
+        "Alimentación y Descarga Automática de Hornos con Manipulador Móvil (MIR (AMR) + Cobot)"
+      ]
+    },
+    {
+      "seccion_destino": "Retos / Consideraciones",
+      "etiqueta": "",
+      "texto": "Estaciones de carga automática para el robot AMR.",
+      "etiqueta_nueva": false,
+      "despues_de": "",
+      "veces": 1,
+      "estaciones": [
+        "Alimentación y Descarga Automática de Hornos con Manipulador Móvil (MIR (AMR) + Cobot)"
+      ]
+    }
+  ],
+  "reescrituras": [
+    {
+      "estacion": "Carga y Descarga Automatizada de Hornos de Curado",
+      "seccion": "Factibilidad (Escala 1–5)",
+      "etiqueta": "Explicación técnica:",
+      "texto": "La manipulación física es un “Pick and Place” estándar de cassettes (nivel 2), pero la integración con la flota de MIR (AMR)s, la comunicación con el orquestador (MES/RTD) y la sincronización de apertura de puertas eleva la complejidad lógica.",
+      "completo": "Explicación técnica: La manipulación física es un “Pick and Place” estándar de cassettes (nivel 2), pero la integración con la flota de MIR (AMR)s, la comunicación con el orquestador (MES/RTD) y la sincronización de apertura de puertas eleva la complejidad lógica.",
+      "parecido": 0.998,
+      "despues_de": "Nivel de dificultad:",
+      "etiqueta_nueva": false,
+      "original_plaud": "explicación técnica: la manipulación física es un \"pick and place\" estándar de cassettes (nivel 2), pero la integración con la flota de mir (amr), la comunicación con el orquestador (mes/rtd) y la sincronización de apertura de puertas eleva la complejidad lógica"
+    },
+    {
+      "estacion": "Carga y Descarga Automatizada de Hornos de Curado",
+      "seccion": "Comentarios y Observaciones Adicionales",
+      "etiqueta": "Viabilidad:",
+      "texto": "Alta. El cliente ya cuenta con la infraestructura de MIR (AMR)s y sistemas de gestión (MES, RTD) para soportar la automatización.",
+      "completo": "Viabilidad: Alta. El cliente ya cuenta con la infraestructura de MIR (AMR)s y sistemas de gestión (MES, RTD) para soportar la automatización.",
+      "parecido": 0.996,
+      "despues_de": "",
+      "etiqueta_nueva": false,
+      "original_plaud": "viabilidad: alta. el cliente ya cuenta con la infraestructura de mir (amr) y sistemas de gestión (mes, rtd) para soportar la automatización"
+    },
+    {
+      "estacion": "Carga y Descarga Automatizada de Hornos de Curado",
+      "seccion": "Resumen de la Aplicación",
+      "etiqueta": "Takt Time y Producción Requerida:",
+      "texto": "Ciclo de horno de ~40-45 minutos.",
+      "completo": "Takt Time y Producción Requerida: Ciclo de horno de ~40-45 minutos.",
+      "parecido": 0.85,
+      "despues_de": "Montaje del Robot:",
+      "etiqueta_nueva": false,
+      "original_plaud": "takt time y producción requerida: ciclo estimado de 3 minutos"
+    },
+    {
+      "estacion": "Alimentación de Máquinas de Sputtering",
+      "seccion": "Descripción de la Aplicación",
+      "etiqueta": "Propuesta de automatización:",
+      "texto": "Instalación de un robot UR20 dedicado por cada máquina Axela. El robot gestionará la carga/descarga desde los MIR (AMR)s hacia los puertos de entrada de la máquina.",
+      "completo": "Propuesta de automatización: Instalación de un robot UR20 dedicado por cada máquina Axela. El robot gestionará la carga/descarga desde los MIR (AMR)s hacia los puertos de entrada de la máquina.",
+      "parecido": 0.964,
+      "despues_de": "Proceso manual actual:",
+      "etiqueta_nueva": false,
+      "original_plaud": "propuesta de automatización: instalación de un robot ur20 dedicado por cada máquina sputtering. el robot gestionará la carga/descarga desde los mir (amr) hacia los puertos de entrada de la máquina"
+    },
+    {
+      "estacion": "Alimentación de Máquinas de Sputtering",
+      "seccion": "Comentarios y Observaciones Adicionales",
+      "etiqueta": "Desafíos:",
+      "texto": "Espacio reducido (pasillos). El robot debe interactuar con MIR (AMR)s que llegan por un lado y cargar la máquina por el otro.",
+      "completo": "Desafíos: Espacio reducido (pasillos). El robot debe interactuar con MIR (AMR)s que llegan por un lado y cargar la máquina por el otro.",
+      "parecido": 0.996,
+      "despues_de": "Viabilidad:",
+      "etiqueta_nueva": false,
+      "original_plaud": "desafíos: espacio reducido (pasillos). el robot debe interactuar con mir (amr) que llegan por un lado y cargar la máquina por el otro"
+    },
+    {
+      "estacion": "Alimentación de Máquinas de Sputtering",
+      "seccion": "Resumen de la Aplicación",
+      "etiqueta": "Impacto en la eficiencia:",
+      "texto": "Maximización del tiempo de uso del equipo Axela (bottleneck costoso).",
+      "completo": "Impacto en la eficiencia: Maximización del tiempo de uso del equipo Axela (bottleneck costoso).",
+      "parecido": 0.933,
+      "despues_de": "",
+      "etiqueta_nueva": false,
+      "original_plaud": "impacto en la eficiencia: maximización del tiempo de uso del equipo sputtering (bottleneck costoso)"
+    },
+    {
+      "estacion": "Alimentación de Máquinas de Sputtering",
+      "seccion": "Resumen de la Aplicación",
+      "etiqueta": "Área de Operación del Robot:",
+      "texto": "Zona frontal de carga de las máquinas Axela.",
+      "completo": "Área de Operación del Robot: Zona frontal de carga de las máquinas Axela.",
+      "parecido": 0.913,
+      "despues_de": "Takt Time y Producción Requerida:",
+      "etiqueta_nueva": false,
+      "original_plaud": "área de operación del robot: zona frontal de carga de las máquinas sputtering"
+    },
+    {
+      "estacion": "Alimentación de Máquinas de Sputtering",
+      "seccion": "Retos / Consideraciones",
+      "etiqueta": "",
+      "texto": "Coordinación de tráfico de MIR (AMR)s en los pasillos.",
+      "completo": "Coordinación de tráfico de MIR (AMR)s en los pasillos.",
+      "parecido": 0.99,
+      "despues_de": "",
+      "etiqueta_nueva": false,
+      "original_plaud": "coordinación de tráfico de mir (amr) en los pasillos"
+    },
+    {
+      "estacion": "Alimentación y Descarga Automática de Hornos con Manipulador Móvil (MIR (AMR) + Cobot)",
+      "seccion": "Factibilidad (Escala 1–5)",
+      "etiqueta": "Explicación técnica:",
+      "texto": "La integración de un cobot sobre un MIR (AMR) (Manipulador Móvil) eleva la complejidad técnica. Requiere una gestión precisa de la navegación, localización (docking) exacto frente al horno para asegurar la referencia del cobot, y la comunicación inalámbrica entre el gestor de flota, el PLC de los hornos y el robot. Además, se deben gestionar las baterías y los tiempos de carga del vehículo. El robot colaborativo AMR y el gestor de flota soporta comunicación nativa usando REST API.",
+      "completo": "Explicación técnica: La integración de un cobot sobre un MIR (AMR) (Manipulador Móvil) eleva la complejidad técnica. Requiere una gestión precisa de la navegación, localización (docking) exacto frente al horno para asegurar la referencia del cobot, y la comunicación inalámbrica entre el gestor de flota, el PLC de los hornos y el robot. Además, se deben gestionar las baterías y los tiempos de carga del vehículo. El robot colaborativo AMR y el gestor de flota soporta comunicación nativa usando REST API.",
+      "parecido": 0.9,
+      "despues_de": "Nivel de dificultad:",
+      "etiqueta_nueva": false,
+      "original_plaud": "explicación técnica: la integración de un cobot sobre un mir (amr) (manipulador móvil) eleva la complejidad técnica. requiere una gestión precisa de la navegación, localización (docking) exacto frente al horno para asegurar la referencia del cobot, y la comunicación inalámbrica entre el gestor de flota, el plc de los hornos y el robot. además, se deben gestionar las baterías y los tiempos de carga del vehículo"
+    },
+    {
+      "estacion": "Alimentación y Descarga Automática de Hornos con Manipulador Móvil (MIR (AMR) + Cobot)",
+      "seccion": "Resumen de la Aplicación",
+      "etiqueta": "Modelo de Robot Recomendado:",
+      "texto": "UR15 .",
+      "completo": "Modelo de Robot Recomendado: UR15 .",
+      "parecido": 0.985,
+      "despues_de": "Tipo de Aplicación:",
+      "etiqueta_nueva": false,
+      "original_plaud": "modelo de robot recomendado: ur15"
+    }
+  ]
+}

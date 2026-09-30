@@ -1,0 +1,131 @@
+{
+  "nombre": "Levantamiento en planta (Universal Robots / MiR)",
+  "version": 1,
+  "descripcion": "Perfil de lectura para el reporte que emite Plaud. Editable sin tocar código: si cambias el prompt de Plaud y se renombra una sección, agrégala como alias y la herramienta la vuelve a reconocer. La comparación ignora acentos, mayúsculas y puntuación, así que solo hacen falta alias para nombres realmente distintos.",
+
+  "estacion": {
+    "prefijos": [
+      "Nombre de la estación",
+      "Estación",
+      "Station name"
+    ]
+  },
+
+  "listado_robots": {
+    "encabezado_contiene": [
+      "Listado de Robots", "Robot list", "Listado de robots posibles",
+      "Listado de AMR", "AMR list", "Listado de MiR"
+    ]
+  },
+
+  "bloque_notas": {
+    "encabezado_contiene": [
+      "Notas de Descarte", "Pendientes de Levantamiento",
+      "Notas adicionales", "Discarded notes"
+    ]
+  },
+
+  "metadatos": {
+    "cliente": ["Nombre del Cliente", "Cliente", "Customer"],
+    "fecha_visita": ["Fecha de la Visita", "Fecha de visita", "Visit date"],
+    "ubicacion": ["Ubicación", "Planta", "Sitio", "Location", "Site"]
+  },
+
+  "secciones": [
+    {
+      "canonico": "Descripción de la Aplicación:",
+      "alias": ["Descripcion de la Aplicacion", "Application description", "Descripción del proceso"],
+      "campos": ["Proceso manual actual", "Propuesta de automatización"]
+    },
+    {
+      "canonico": "Factibilidad (Escala 1–5):",
+      "alias": ["Factibilidad", "Factibilidad (Escala 1-5)", "Feasibility"],
+      "campos": ["Nivel de dificultad", "Explicación técnica"]
+    },
+    {
+      "canonico": "Recursos Humanos:",
+      "alias": ["Recursos humanos", "Human resources", "Personal"],
+      "campos": ["Asociados actuales por turno", "Asociados después de la propuesta", "Turnos"]
+    },
+    {
+      "canonico": "Comentarios y Observaciones Adicionales:",
+      "alias": ["Comentarios y observaciones", "Observaciones adicionales", "Additional comments"],
+      "campos": ["Viabilidad", "Desafíos", "Oportunidades adicionales"]
+    },
+    {
+      "canonico": "Resumen de la Aplicación:",
+      "alias": ["Resumen de la aplicacion", "Application summary", "Resumen técnico"],
+      "campos": [
+        "Impacto en la eficiencia",
+        "Mejoras en seguridad",
+        "Ahorro en costos",
+        "Impacto Económico / ROI",
+        "Tipo de Aplicación",
+        "Modelo de Robot Recomendado",
+        "Modelo de Robot AMR Recomendado",
+        "Tipo de Gripper / Herramienta Final Recomendada",
+        "Modo Correcto de Uso del Robot",
+        "Sistemas Auxiliares Requeridos",
+        "Montaje del Robot",
+        "Takt Time y Producción Requerida",
+        "Área de Operación del Robot",
+        "Peso de la Pieza / Carga útil del Robot"
+      ]
+    },
+    {
+      "canonico": "Puntos Clave para Automatizar:",
+      "alias": ["Puntos clave", "Key points", "Drivers"],
+      "campos": []
+    },
+    {
+      "canonico": "Retos / Consideraciones:",
+      "alias": ["Retos", "Consideraciones", "Challenges", "Retos y consideraciones"],
+      "campos": []
+    },
+    {
+      "canonico": "Proceso Actual:",
+      "alias": ["Proceso actual", "Current process", "Secuencia actual"],
+      "campos": []
+    },
+    {
+      "canonico": "Propuesta con Robot Colaborativo:",
+      "alias": ["Propuesta con cobot", "Proposed process", "Secuencia propuesta"],
+      "campos": []
+    },
+    {
+      "canonico": "Consideraciones de Seguridad:",
+      "alias": ["Seguridad", "Safety considerations", "Consideraciones de seguridad por estación"],
+      "campos": []
+    }
+  ],
+
+  "alias_de_campo": {
+    "Modelo de Robot AMR Recomendado": [
+      "Model de Robot AMR recomendado",
+      "Modelo de AMR recomendado",
+      "Robot AMR recomendado",
+      "Modelo de Robot Móvil Recomendado"
+    ],
+    "Peso de la Pieza / Carga útil del Robot": [
+      "Peso de la Pieza / Carga util del Robot",
+      "Peso de la pieza",
+      "Carga útil",
+      "Payload"
+    ],
+    "Impacto Económico / ROI": [
+      "Impacto Economico / ROI",
+      "ROI",
+      "Retorno de inversión"
+    ],
+    "Tipo de Gripper / Herramienta Final Recomendada": [
+      "Tipo de Gripper",
+      "Gripper recomendado",
+      "Herramienta final"
+    ]
+  },
+
+  "notas": [
+    "El orden de 'secciones' es el orden canónico con el que se escriben en el reporte final, sin importar en qué orden las haya emitido Plaud.",
+    "'campos' son las etiquetas en negrita esperadas dentro de cada sección. Alimentan la matriz ejecutiva y las validaciones; una sección puede traer viñetas sin etiqueta y no pasa nada."
+  ]
+}
