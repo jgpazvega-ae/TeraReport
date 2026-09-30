@@ -341,6 +341,18 @@ def add_photo(station_uid, path, caption='', after_section=''):
         return _err(exc)
 
 
+def set_photo_caption(station_uid, path, caption):
+    try:
+        station, _, _ = _find_or_raise(station_uid)
+        for p in station.photos:
+            if p.path == path:
+                p.caption = caption
+                return _ok(_station_view(station))
+        raise ValueError('No encuentro esa foto en la estación (¿ya se quitó?).')
+    except Exception as exc:
+        return _err(exc)
+
+
 def remove_photo(station_uid, path):
     try:
         station, _, _ = _find_or_raise(station_uid)

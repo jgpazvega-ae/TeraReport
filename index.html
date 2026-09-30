@@ -87,6 +87,54 @@
   .campo-doble { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   @media (max-width: 480px) { .campo-doble { grid-template-columns: 1fr; } }
   .vacio { color: var(--tenue); font-size: 13.5px; padding: 10px 2px; }
+
+  /* fotos por estación */
+  .bloque-fotos { border-top: 1px dashed var(--borde); margin-top: 8px; padding-top: 8px; }
+  .bloque-fotos h4 { font-size: 12.5px; color: var(--tenue); margin: 0 0 6px; font-weight: 600; }
+  .rejilla-fotos { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  .foto-item { width: 92px; }
+  .foto-item img {
+    width: 92px; height: 92px; object-fit: cover; border-radius: 8px;
+    border: 1px solid var(--borde); display: block; background: #eee;
+  }
+  .foto-item input[type=text] {
+    font-size: 11px; padding: 4px 5px; margin-top: 3px;
+  }
+  .foto-item button {
+    width: 100%; margin-top: 3px; padding: 3px 4px; font-size: 11px;
+    background: #fdecea; color: var(--error); font-weight: 500;
+  }
+  .btn-camara {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #eef1f8; color: var(--azul-osc); border-radius: 8px;
+    padding: 7px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .btn-camara input { display: none; }
+
+  /* sugerencias de biblioteca */
+  .bloque-sugerencias {
+    background: #fbf8ee; border: 1px solid #eee0b8; border-radius: 8px;
+    padding: 8px 10px; margin-top: 8px;
+  }
+  .bloque-sugerencias h4 { font-size: 12.5px; color: #8a6d1d; margin: 0 0 6px; font-weight: 600; }
+  .sugerencia-fila {
+    display: flex; align-items: center; gap: 8px; padding: 4px 0;
+    border-top: 1px solid #f0e6c4;
+  }
+  .sugerencia-fila:first-of-type { border-top: none; }
+  .sugerencia-fila .texto { flex: 1; font-size: 12.5px; }
+  .sugerencia-fila button { padding: 5px 10px; font-size: 12px; flex: none; }
+
+  /* panel de calidad */
+  .hallazgo { display: flex; gap: 8px; align-items: flex-start; padding: 8px 6px; border-radius: 8px; cursor: pointer; }
+  .hallazgo:hover { background: #f4f6fb; }
+  .hallazgo .punto { width: 9px; height: 9px; border-radius: 50%; flex: none; margin-top: 5px; }
+  .hallazgo.error .punto { background: var(--error); }
+  .hallazgo.advertencia .punto { background: var(--advertencia); }
+  .hallazgo.sugerencia .punto { background: var(--azul); }
+  .hallazgo .msg { font-size: 13px; }
+  .hallazgo .est { font-size: 11.5px; color: var(--tenue); }
+  .resaltado { outline: 2px solid var(--azul); outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -139,7 +187,17 @@
     </section>
 
     <section class="tarjeta">
-      <h2>4 · Generar</h2>
+      <h2>4 · Calidad</h2>
+      <p style="font-size:12.5px;color:var(--tenue);margin:0 0 8px">
+        Revisa esto antes de enviar el reporte al cliente: texto de relleno,
+        robots sin modelo recomendado, incoherencias de carga útil.
+      </p>
+      <button id="btnVerificar" class="secundario chico" disabled>Verificar</button>
+      <div id="resultadoCalidad" style="margin-top:10px"></div>
+    </section>
+
+    <section class="tarjeta">
+      <h2>5 · Generar</h2>
       <button id="btnGenerar" disabled style="width:100%">Generar reporte .docx</button>
       <div id="resultadoGenerar" style="margin-top:10px"></div>
     </section>
@@ -188,6 +246,9 @@ const PER_REPORT_FIELDS = ['cliente', 'ubicacion', 'fecha_visita', 'fecha_report
 let pyodide = null;
 let webapi = null;
 let currentReport = null;
+let currentSuggestions = {};   // {station_uid: [fragmento, ...]}
+let openStations = new Set();  // uids de estación que el usuario dejó expandidos
+let photoCounter = 0;          // para nombres de archivo virtuales únicos
 
 // -----------------------------------------------------------------------
 // utilidades de UI
@@ -361,7 +422,11 @@ function renderTree(report) {
 
     const det = document.createElement('details');
     det.className = 'estacion';
-    det.open = !!query;
+    det.dataset.uid = station.uid;
+    det.open = !!query || openStations.has(station.uid);
+    det.addEventListener('toggle', () => {
+      if (det.open) openStations.add(station.uid); else openStations.delete(station.uid);
+    });
 
     const summary = document.createElement('summary');
     summary.innerHTML =
@@ -443,6 +508,14 @@ function renderTree(report) {
       }
       body.appendChild(secDet);
     }
+
+    const sugerencias = currentSuggestions[station.uid];
+    if (sugerencias && sugerencias.length) {
+      body.appendChild(renderSuggestionsBlock(station, sugerencias));
+    }
+
+    body.appendChild(renderPhotosBlock(station));
+
     det.appendChild(body);
     cont.appendChild(det);
   }
@@ -450,6 +523,151 @@ function renderTree(report) {
   if (!cont.children.length) {
     cont.innerHTML = '<p class="vacio">Nada coincide con la búsqueda.</p>';
   }
+}
+
+// -----------------------------------------------------------------------
+// sugerencias de biblioteca (criterio de experto reutilizable)
+// -----------------------------------------------------------------------
+function renderSuggestionsBlock(station, sugerencias) {
+  const div = document.createElement('div');
+  div.className = 'bloque-sugerencias';
+  div.innerHTML = '<h4>💡 Sugerencias de la biblioteca</h4>';
+  for (const frag of sugerencias) {
+    const fila = document.createElement('div');
+    fila.className = 'sugerencia-fila';
+    const texto = (frag.etiqueta ? frag.etiqueta + ' ' : '') + frag.texto;
+    fila.innerHTML =
+      '<div class="texto">' + escapeHtml(texto) + '</div>' +
+      '<button class="secundario">Agregar</button>';
+    fila.querySelector('button').addEventListener('click', () => {
+      try {
+        callPy('apply_suggestion', station.uid, frag.id);
+        persist();
+        currentSuggestions[station.uid] =
+          (currentSuggestions[station.uid] || []).filter((f) => f.id !== frag.id);
+        renderTree(callPy('get_report'));
+      } catch (e) { alert(e.message); }
+    });
+    div.appendChild(fila);
+  }
+  return div;
+}
+
+// -----------------------------------------------------------------------
+// fotos por estación (cámara del celular o archivos)
+// -----------------------------------------------------------------------
+function renderPhotosBlock(station) {
+  const div = document.createElement('div');
+  div.className = 'bloque-fotos';
+  div.innerHTML = '<h4>📷 Fotos de la estación</h4>';
+
+  const rejilla = document.createElement('div');
+  rejilla.className = 'rejilla-fotos';
+  for (const foto of station.photos) {
+    let bytes;
+    try { bytes = pyodide.FS.readFile(foto.path); } catch (e) { continue; }
+    const blob = new Blob([bytes]);
+    const url = URL.createObjectURL(blob);
+    const item = document.createElement('div');
+    item.className = 'foto-item';
+    item.innerHTML =
+      '<img src="' + url + '" alt="foto">' +
+      '<input type="text" placeholder="Pie de foto…" value="' + escapeHtml(foto.caption || '') + '">' +
+      '<button>Quitar</button>';
+    item.querySelector('input').addEventListener('blur', (e) => {
+      try { callPy('set_photo_caption', station.uid, foto.path, e.target.value); persist(); }
+      catch (err) { alert(err.message); }
+    });
+    item.querySelector('button').addEventListener('click', () => {
+      try {
+        callPy('remove_photo', station.uid, foto.path);
+        persist();
+        renderTree(callPy('get_report'));
+      } catch (err) { alert(err.message); }
+    });
+    rejilla.appendChild(item);
+  }
+  div.appendChild(rejilla);
+
+  const label = document.createElement('label');
+  label.className = 'btn-camara';
+  label.innerHTML = '+ Tomar o elegir foto ' +
+    '<input type="file" accept="image/*" capture="environment" multiple>';
+  label.querySelector('input').addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setBusy('Guardando foto(s)…');
+    try {
+      pyodide.FS.mkdirTree('/tmp/fotos');
+      for (const file of files) {
+        photoCounter += 1;
+        const ext = (file.name.match(/\.[a-zA-Z0-9]+$/) || ['.jpg'])[0];
+        const path = '/tmp/fotos/foto_' + photoCounter + ext;
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        pyodide.FS.writeFile(path, bytes);
+        callPy('add_photo', station.uid, path, '');
+      }
+      renderTree(callPy('get_report'));
+    } catch (err) {
+      alert('No pude guardar la foto: ' + err.message);
+    } finally {
+      clearBusy();
+      e.target.value = '';
+    }
+  });
+  div.appendChild(label);
+  div.appendChild(Object.assign(document.createElement('div'), {
+    style: 'font-size:11px;color:var(--tenue);margin-top:5px',
+    textContent: 'Las fotos se conservan mientras esta pestaña siga abierta; ' +
+      'si recargas la página antes de generar, hay que volver a agregarlas.',
+  }));
+  return div;
+}
+
+// -----------------------------------------------------------------------
+// panel de calidad
+// -----------------------------------------------------------------------
+function renderQuality(findings) {
+  const cont = document.getElementById('resultadoCalidad');
+  cont.innerHTML = '';
+  if (!findings.length) {
+    cont.innerHTML = '<div class="aviso info">Sin hallazgos — el reporte se ve limpio.</div>';
+    return;
+  }
+  const conteo = { error: 0, advertencia: 0, sugerencia: 0 };
+  findings.forEach((f) => { conteo[f.severity] = (conteo[f.severity] || 0) + 1; });
+  const resumen = document.createElement('div');
+  resumen.style.cssText = 'font-size:12.5px;color:var(--tenue);margin-bottom:6px';
+  resumen.textContent = [
+    conteo.error ? conteo.error + ' error(es)' : '',
+    conteo.advertencia ? conteo.advertencia + ' advertencia(s)' : '',
+    conteo.sugerencia ? conteo.sugerencia + ' sugerencia(s)' : '',
+  ].filter(Boolean).join(' · ') + ' — toca uno para ir a esa estación.';
+  cont.appendChild(resumen);
+
+  for (const f of findings) {
+    const row = document.createElement('div');
+    row.className = 'hallazgo ' + f.severity;
+    row.innerHTML =
+      '<span class="punto"></span>' +
+      '<div><div class="msg">' + escapeHtml(f.message) + '</div>' +
+      (f.station_name ? '<div class="est">' + escapeHtml(f.station_name) + '</div>' : '') +
+      '</div>';
+    if (f.station_uid) {
+      row.addEventListener('click', () => jumpToStation(f.station_uid));
+    }
+    cont.appendChild(row);
+  }
+}
+
+function jumpToStation(uid) {
+  const det = document.querySelector('details.estacion[data-uid="' + uid + '"]');
+  if (!det) return;
+  det.open = true;
+  openStations.add(uid);
+  det.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  det.classList.add('resaltado');
+  setTimeout(() => det.classList.remove('resaltado'), 1800);
 }
 
 // -----------------------------------------------------------------------
@@ -462,10 +680,15 @@ async function loadReportFromBytes(bytes, virtualName) {
   setBusy('Leyendo el reporte…');
   try {
     const result = callPy('load_report_from_path', path);
+    openStations = new Set();
+    try { currentSuggestions = callPy('get_suggestions'); }
+    catch (e) { console.warn('No se pudieron calcular sugerencias:', e); currentSuggestions = {}; }
     renderForm(result.datos);
     renderTree(result.reporte);
     document.getElementById('btnGenerar').disabled = false;
+    document.getElementById('btnVerificar').disabled = false;
     document.getElementById('resultadoGenerar').innerHTML = '';
+    document.getElementById('resultadoCalidad').innerHTML = '';
     showBanner('resumenCarga', 'info',
       'Cargado: ' + result.resumen.estaciones + ' estaciones, ' +
       result.resumen.vinetas + ' viñetas, ' + result.resumen.robots + ' modelos de robot, ' +
@@ -499,6 +722,13 @@ function wireEvents() {
     if (currentReport) renderTree(currentReport);
   });
 
+  document.getElementById('btnVerificar').addEventListener('click', () => {
+    try {
+      const findings = callPy('run_quality');
+      renderQuality(findings);
+    } catch (e) { alert(e.message); }
+  });
+
   document.getElementById('btnGuardarDefaults').addEventListener('click', () => {
     try { callPy('save_defaults'); persist(); alert('Guardado como predeterminado.'); }
     catch (e) { alert(e.message); }
@@ -519,16 +749,34 @@ function wireEvents() {
       const result = callPy('reset_report');
       persist();
       currentReport = null;
+      currentSuggestions = {};
+      openStations = new Set();
       document.getElementById('archivoPlaud').value = '';
       document.getElementById('resumenCarga').classList.add('oculto');
       document.getElementById('resultadoGenerar').innerHTML = '';
+      document.getElementById('resultadoCalidad').innerHTML = '';
       document.getElementById('btnGenerar').disabled = true;
+      document.getElementById('btnVerificar').disabled = true;
       renderForm(result.datos);
       renderTree(null);
     } catch (e) { alert(e.message); }
   });
 
   document.getElementById('btnGenerar').addEventListener('click', async () => {
+    try {
+      const config = callPy('get_config');
+      if (config.validar_antes_de_generar !== false) {
+        const findings = callPy('run_quality');
+        renderQuality(findings);
+        const errores = findings.filter((f) => f.severity === 'error');
+        if (errores.length && !confirm(
+          'Encontré ' + errores.length + ' error(es) de calidad (ver la sección ' +
+          '"4 · Calidad" más arriba). ¿Generar de todos modos?')) {
+          return;
+        }
+      }
+    } catch (e) { console.warn('No se pudo verificar calidad antes de generar:', e); }
+
     setBusy('Generando el reporte…');
     try {
       const outPath = '/tmp/reporte_generado.docx';

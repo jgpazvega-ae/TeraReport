@@ -102,18 +102,38 @@ callPy('run_quality')                // hallazgos de calidad
 4. GitHub tarda uno o dos minutos en publicar. El enlace queda en
    `https://jgpazvega-ae.github.io/TeraReport/`.
 
+## Qué cubre ya
+
+Además del flujo esencial (cargar, completar datos, editar contenido,
+generar y descargar), ya están:
+
+- **Fotos por estación** — botón "Tomar o elegir foto" (usa la cámara
+  trasera del celular vía `capture="environment"`, o el selector de
+  archivos en computadora), con miniatura, pie de foto editable y opción
+  de quitarla. Las fotos viven en el sistema de archivos temporal de
+  Pyodide: se conservan mientras la pestaña siga abierta, pero no
+  sobreviven a recargar la página (hay que agregarlas y generar en la
+  misma sesión).
+- **Panel de calidad** — botón "Verificar" que corre las mismas
+  validaciones que la app de escritorio (texto de relleno, robot sin
+  modelo recomendado, campos obligatorios vacíos...) y lista los
+  hallazgos por severidad; tocar uno abre y resalta esa estación en el
+  árbol. También corre automáticamente antes de generar: si hay errores,
+  pide confirmación antes de continuar (se puede desactivar con
+  `validar_antes_de_generar: false` en la configuración).
+- **Sugerencias de biblioteca** — cada estación muestra, si aplica,
+  fragmentos de criterio de experto ya guardados (de la biblioteca
+  sembrada en `data/biblioteca_semilla.json`); un clic en "Agregar" los
+  inserta como viñeta real en la sección correspondiente.
+
 ## Qué falta (siguiente fase)
 
-Este primer avance cubre el flujo esencial: cargar, completar datos, editar
-contenido, generar y descargar. Quedan pendientes, en orden de prioridad:
-
-- **Fotos por estación** — tomar una foto con la cámara del celular y
-  adjuntarla a la estación correcta durante el recorrido (el motor ya trae
-  la reparación de JPEGs de teléfono que esto necesita, en `jpeg_fix.py`).
-- **Panel de calidad** — mostrar los hallazgos de `validate.py` antes de
-  generar (texto de relleno, robot sin modelo recomendado, etc.).
-- **Sugerencias de biblioteca** — proponer fragmentos de criterio de
-  experto ya guardados, por estación.
-- **Editor y vista previa de reglas de reemplazo.**
-- Service worker para que la app cargue instantáneo y funcione sin
+- **Editor y vista previa de reglas de reemplazo** — hoy las reglas se
+  aplican con lo que ya esté guardado en la configuración; falta una
+  pantalla para editarlas desde el celular (en escritorio ya existe).
+- **Persistencia de fotos entre recargas** — moverlas a IDBFS (como
+  `settings.json`/`perfil_plaud.json`) para que sobrevivan a cerrar la
+  pestaña, con cuidado de no llenar el almacenamiento del navegador sin
+  control.
+- **Service worker** para que la app cargue instantáneo y funcione sin
   conexión incluso la primera vez que se visita un sitio nuevo.
