@@ -347,6 +347,33 @@ async function boot() {
 
     renderForm(info.config.datos);
     wireEvents();
+
+    // Si la pestaña se cerró o recargó a medio trabajo, el reporte en curso
+    // quedó respaldado en /data (ver persist()/autosave()). Se ofrece
+    // recuperarlo antes de dejar trabajar: si se descarta, también se
+    // limpian las fotos huérfanas que hubiera quedado.
+    if (callPy('has_pending_report')) {
+      if (confirm(
+          'Encontré un reporte sin terminar de una sesión anterior (de cuando ' +
+          'se cerró o recargó la página).\n\n¿Quieres recuperarlo?')) {
+        try {
+          const result = callPy('resume_pending_report');
+          currentSuggestions = (() => { try { return callPy('get_suggestions'); } catch (e) { return {}; } })();
+          openStations = new Set();
+          renderTree(result.reporte);
+          document.getElementById('btnGenerar').disabled = false;
+          document.getElementById('btnVerificar').disabled = false;
+          showBanner('resumenCarga', 'info',
+            'Recuperado: ' + result.resumen.estaciones + ' estaciones, ' +
+            result.resumen.vinetas + ' viñetas.');
+        } catch (e) {
+          alert('No pude recuperar el reporte anterior: ' + e.message);
+        }
+      } else {
+        try { callPy('discard_pending_report'); persist(); } catch (e) { console.error(e); }
+      }
+    }
+
     clearBusy();
   } catch (err) {
     console.error(err);
@@ -359,9 +386,13 @@ async function boot() {
 }
 
 // Guarda /data (IDBFS) en IndexedDB. Se llama después de cualquier operación
-// que haya escrito configuración, perfil o biblioteca — sin esto, los
-// cambios se perderían al cerrar la pestaña.
+// que haya escrito configuración, perfil, biblioteca o el reporte en curso —
+// sin esto, los cambios se perderían al cerrar la pestaña. Primero se le pide
+// a Python que vuelque el reporte actual a /data/reporte_en_progreso.json
+// (autosave()), para poder ofrecerlo de vuelta si la página se recarga a
+// medio trabajo.
 function persist() {
+  try { callPy('autosave'); } catch (e) { console.error('No se pudo autoguardar:', e); }
   pyodide.FS.syncfs(false, (err) => { if (err) console.error('No se pudo guardar en IndexedDB:', err); });
 }
 
@@ -598,15 +629,19 @@ function renderPhotosBlock(station) {
     if (!files.length) return;
     setBusy('Guardando foto(s)…');
     try {
-      pyodide.FS.mkdirTree('/tmp/fotos');
+      // /data está montado con IDBFS (ver boot()): cualquier archivo aquí
+      // sobrevive a recargar la página una vez que persist() lo sincroniza
+      // a IndexedDB. /tmp es memoria pura y se pierde al cerrar la pestaña.
+      pyodide.FS.mkdirTree('/data/fotos');
       for (const file of files) {
         photoCounter += 1;
         const ext = (file.name.match(/\.[a-zA-Z0-9]+$/) || ['.jpg'])[0];
-        const path = '/tmp/fotos/foto_' + photoCounter + ext;
+        const path = '/data/fotos/foto_' + photoCounter + ext;
         const bytes = new Uint8Array(await file.arrayBuffer());
         pyodide.FS.writeFile(path, bytes);
         callPy('add_photo', station.uid, path, '');
       }
+      persist();
       renderTree(callPy('get_report'));
     } catch (err) {
       alert('No pude guardar la foto: ' + err.message);
@@ -616,11 +651,6 @@ function renderPhotosBlock(station) {
     }
   });
   div.appendChild(label);
-  div.appendChild(Object.assign(document.createElement('div'), {
-    style: 'font-size:11px;color:var(--tenue);margin-top:5px',
-    textContent: 'Las fotos se conservan mientras esta pestaña siga abierta; ' +
-      'si recargas la página antes de generar, hay que volver a agregarlas.',
-  }));
   return div;
 }
 

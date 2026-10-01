@@ -110,10 +110,17 @@ generar y descargar), ya están:
 - **Fotos por estación** — botón "Tomar o elegir foto" (usa la cámara
   trasera del celular vía `capture="environment"`, o el selector de
   archivos en computadora), con miniatura, pie de foto editable y opción
-  de quitarla. Las fotos viven en el sistema de archivos temporal de
-  Pyodide: se conservan mientras la pestaña siga abierta, pero no
-  sobreviven a recargar la página (hay que agregarlas y generar en la
-  misma sesión).
+  de quitarla. Los archivos viven en `/data/fotos` (el punto de montaje
+  IDBFS), así que sobreviven a cerrar la pestaña o quedarse sin batería a
+  medio recorrido — ver "Autoguardado" abajo.
+- **Autoguardado y recuperación** — el reporte en curso (estaciones,
+  ediciones, fotos) se respalda en el navegador después de cada cambio. Si
+  la página se recarga o el navegador se cierra a medio trabajo, al volver
+  a abrir TeraReport se ofrece recuperarlo tal como quedó; al recuperar, se
+  reaplican las reglas de reemplazo vigentes (por si cambiaron mientras
+  tanto) sin tocar ninguna edición manual. Cargar un reporte distinto o
+  darle a "Nuevo reporte" descarta el respaldo anterior y limpia las fotos
+  huérfanas.
 - **Panel de calidad** — botón "Verificar" que corre las mismas
   validaciones que la app de escritorio (texto de relleno, robot sin
   modelo recomendado, campos obligatorios vacíos...) y lista los
@@ -131,9 +138,11 @@ generar y descargar), ya están:
 - **Editor y vista previa de reglas de reemplazo** — hoy las reglas se
   aplican con lo que ya esté guardado en la configuración; falta una
   pantalla para editarlas desde el celular (en escritorio ya existe).
-- **Persistencia de fotos entre recargas** — moverlas a IDBFS (como
-  `settings.json`/`perfil_plaud.json`) para que sobrevivan a cerrar la
-  pestaña, con cuidado de no llenar el almacenamiento del navegador sin
-  control.
+- **Límite de espacio de fotos** — hoy no hay tope ni aviso si el
+  almacenamiento del navegador se llena tras muchos reportes con fotos;
+  vale la pena un indicador de uso y un botón para vaciar fotos viejas.
 - **Service worker** para que la app cargue instantáneo y funcione sin
   conexión incluso la primera vez que se visita un sitio nuevo.
+- **Sincronizar `Plaud2Report_v2` y `TeraReport`** — son dos copias del
+  mismo motor (`py/p2r/` aquí, `src/p2r/` en el de escritorio); un cambio
+  en una no llega solo a la otra.

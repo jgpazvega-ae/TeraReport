@@ -14,10 +14,12 @@ módulo, igual que gui.py lo guarda en atributos de self: solo hay una
 "sesión" por pestaña del navegador, así que no hace falta nada más elaborado.
 """
 
+import io
 import json
+import os
 
 from . import pipeline, profile, rules, settings, validate
-from .model import Photo
+from .model import Photo, Report
 
 # Campos de 'datos' propios de UN cliente/visita concreto. Ver la nota en
 # gui.py (PER_REPORT_FIELDS): cargar un reporte nuevo debe limpiarlos antes de
@@ -28,6 +30,111 @@ from .model import Photo
 PER_REPORT_FIELDS = ('cliente', 'ubicacion', 'fecha_visita', 'fecha_reporte', 'fecha_firma')
 
 _state = {'env': None, 'config': None, 'report': None, 'source_path': ''}
+
+# Carpeta de fotos DENTRO de /data (el punto de montaje IDBFS de index.html):
+# cualquier archivo escrito aquí sobrevive a cerrar la pestaña, porque el
+# bootstrap sincroniza TODO /data a IndexedDB en cada persist(). Las fotos en
+# /tmp (memoria pura, sin respaldo) se perderían al recargar.
+def photos_dir():
+    path = os.path.join(settings.user_data_dir(), 'fotos')
+    if not os.path.isdir(path):
+        os.makedirs(path)
+    return path
+
+
+def clear_photos():
+    """Borra los archivos de fotos huérfanos de un reporte anterior.
+
+    Se llama al cargar un reporte nuevo y al reiniciar: las fotos viven
+    aparte del modelo (son archivos en /data/fotos, el Report solo guarda la
+    ruta), así que sin esto se acumularían para siempre en el navegador cada
+    vez que se carga un reporte distinto — el mismo defecto que ya se
+    corrigió para los campos del formulario, aplicado a archivos.
+    """
+    folder = photos_dir()
+    for name in os.listdir(folder):
+        full = os.path.join(folder, name)
+        if os.path.isfile(full):
+            os.remove(full)
+
+
+# ---------------------------------------------------------------------------
+# autoguardado del reporte en progreso
+#
+# El reporte cargado vive solo en memoria (variable de módulo _state): si se
+# recarga la página o el navegador se cierra a medio trabajo, se perdía todo
+# (el mismo problema que las fotos en /tmp, pero del reporte completo). Esto
+# lo guarda en /data (persistente via IDBFS) después de cada cambio, y lo
+# ofrece de vuelta la próxima vez que arranca la página.
+# ---------------------------------------------------------------------------
+
+_AUTOSAVE_NAME = 'reporte_en_progreso.json'
+
+
+def _autosave_path():
+    return os.path.join(settings.user_data_dir(), _AUTOSAVE_NAME)
+
+
+def _discard_autosave_file():
+    path = _autosave_path()
+    if os.path.isfile(path):
+        os.remove(path)
+
+
+def autosave():
+    """Guarda el reporte en progreso. index.html la llama justo antes de
+    sincronizar /data a IndexedDB (ver persist() en el bootstrap), así que
+    cada cambio real queda respaldado."""
+    try:
+        if _state['report'] is None:
+            _discard_autosave_file()
+            return _ok(None)
+        payload = {'source_path': _state['source_path'],
+                  'report': _state['report'].to_dict()}
+        with io.open(_autosave_path(), 'w', encoding='utf-8') as fh:
+            fh.write(json.dumps(payload, ensure_ascii=False))
+        return _ok(None)
+    except Exception as exc:
+        return _err(exc)
+
+
+def has_pending_report():
+    return _ok(os.path.isfile(_autosave_path()))
+
+
+def resume_pending_report():
+    """Recupera el reporte autoguardado de una sesión anterior.
+
+    to_dict()/from_dict() no conservan la capa automática (se recalcula a
+    propósito al recargar, ver model.py), así que se vuelven a aplicar las
+    reglas de reemplazo vigentes — si cambiaron desde que se guardó, el
+    reporte recuperado ya las refleja en vez de quedarse con terminología
+    vieja. Las ediciones manuales no se tocan, igual que siempre.
+    """
+    try:
+        with io.open(_autosave_path(), encoding='utf-8') as fh:
+            payload = json.load(fh)
+        report = Report.from_dict(payload.get('report', {}))
+        rules.apply_to_report(report, _config().get('reemplazos'))
+        _state['report'] = report
+        _state['source_path'] = payload.get('source_path', '')
+        bullets = sum(len(s.bullets) for st in report.stations for s in st.sections)
+        return _ok({
+            'reporte': _report_view(report),
+            'resumen': {'estaciones': len(report.stations), 'vinetas': bullets,
+                       'robots': len(report.robots), 'notas': len(report.notes)},
+        })
+    except Exception as exc:
+        return _err(exc)
+
+
+def discard_pending_report():
+    try:
+        _discard_autosave_file()
+        clear_photos()
+        return _ok(None)
+    except Exception as exc:
+        return _err(exc)
 
 
 def _ok(data=None):
@@ -213,9 +320,13 @@ def load_report_from_path(path):
 
         # Ver PER_REPORT_FIELDS arriba: se limpian ANTES de prefill() para
         # que un reporte nuevo no herede el cliente/ubicación/fechas del
-        # anterior.
+        # anterior. Las fotos del reporte previo (si lo había) se limpian por
+        # la misma razón: son archivos aparte del modelo, y sin esto se
+        # acumularían en /data/fotos cada vez que se carga un reporte distinto.
         for key in PER_REPORT_FIELDS:
             config.setdefault('datos', {})[key] = ''
+        clear_photos()
+        _discard_autosave_file()
 
         report = pipeline.load_report(path, config, env)
         pipeline.prefill(report, config)
@@ -263,6 +374,8 @@ def reset_report():
         for key in PER_REPORT_FIELDS:
             config.setdefault('datos', {})[key] = saved_defaults.get(key, '')
         settings.save(config)
+        clear_photos()
+        _discard_autosave_file()
 
         _state['report'] = None
         _state['source_path'] = ''
