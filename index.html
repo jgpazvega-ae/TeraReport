@@ -156,6 +156,16 @@
       librerías necesarias. Después queda en caché del navegador y arranca
       mucho más rápido, incluso sin internet.
     </p>
+    <p id="pasoActual" class="fila" style="margin-top:10px;font-size:13px;color:var(--azul-osc)">
+      <span class="spinner" style="border-color:rgba(11,95,255,.25);border-top-color:var(--azul)"></span>
+      <span id="pasoActualTexto">Iniciando…</span>
+    </p>
+    <div id="avisoTardanza" class="aviso warn oculto" style="margin-top:10px">
+      Esto está tardando más de lo normal. Si tu conexión es lenta (datos
+      móviles, WiFi débil), dale un momento más — está descargando el motor
+      de Python desde internet, no hace falta recargar la página. Si no
+      avanza después de un minuto, revisa tu conexión e inténtalo de nuevo.
+    </div>
   </div>
 
   <div id="appOculta" class="oculto">
@@ -257,6 +267,11 @@ function setBusy(text) {
   const el = document.getElementById('estado');
   document.getElementById('estadoTexto').textContent = text || 'Trabajando…';
   el.classList.remove('oculto');
+  // Mientras la tarjeta "Cargando el motor…" sigue visible, el mismo texto
+  // de progreso se repite ahí — la barra de abajo es fácil de pasar por
+  // alto durante el arranque, y sin esto parece que la página no hace nada.
+  const pasoTexto = document.getElementById('pasoActualTexto');
+  if (pasoTexto) pasoTexto.textContent = text || 'Trabajando…';
 }
 function clearBusy() {
   document.getElementById('estado').classList.add('oculto');
@@ -290,6 +305,14 @@ async function fetchBytes(url) {
 }
 
 async function boot() {
+  // Si el arranque se tarda, se avisa sin interrumpir nada — en una
+  // conexión lenta (datos móviles) esto puede tomar bastante más que en
+  // WiFi, y sin este aviso parece que la página se congeló.
+  const avisoTardanza = setTimeout(() => {
+    const el = document.getElementById('avisoTardanza');
+    if (el) el.classList.remove('oculto');
+  }, 15000);
+
   try {
     setBusy('Cargando Pyodide…');
     pyodide = await loadPyodide();
@@ -302,18 +325,25 @@ async function boot() {
     const micropip = pyodide.pyimport('micropip');
     await micropip.install('python-docx');
 
-    setBusy('Descargando el motor de TeraReport…');
     pyodide.FS.mkdirTree('/app/py/p2r');
     pyodide.FS.mkdirTree('/app/data');
     pyodide.FS.mkdirTree('/app/templates');
+    let descargados = 0;
+    const totalArchivos = PY_MODULES.length + DATA_FILES.length + 1;
     for (const name of PY_MODULES) {
       pyodide.FS.writeFile('/app/py/p2r/' + name, await fetchBytes('py/p2r/' + name));
+      descargados += 1;
+      setBusy('Descargando el motor de TeraReport… (' + descargados + '/' + totalArchivos + ')');
     }
     for (const name of DATA_FILES) {
       pyodide.FS.writeFile('/app/data/' + name, await fetchBytes('data/' + name));
+      descargados += 1;
+      setBusy('Descargando el motor de TeraReport… (' + descargados + '/' + totalArchivos + ')');
     }
     pyodide.FS.writeFile('/app/templates/plant_assessment.docx',
       await fetchBytes('templates/plant_assessment.docx'));
+    descargados += 1;
+    setBusy('Descargando el motor de TeraReport… (' + descargados + '/' + totalArchivos + ')');
     // El ejemplo se descarga aparte y no bloquea el arranque si falla.
     try {
       pyodide.FS.writeFile('/app/data/plaud_ejemplo.docx',
@@ -340,6 +370,7 @@ async function boot() {
 
     const info = callPy('startup');
     console.log('TeraReport listo:', info);
+    clearTimeout(avisoTardanza);
 
     document.getElementById('avisoInicio').classList.add('oculto');
     document.getElementById('appOculta').classList.remove('oculto');
@@ -377,10 +408,15 @@ async function boot() {
     clearBusy();
   } catch (err) {
     console.error(err);
+    clearTimeout(avisoTardanza);
     document.getElementById('avisoInicio').innerHTML =
       '<h2 style="color:var(--error)">No se pudo cargar TeraReport</h2>' +
       '<p style="font-size:13.5px">' + escapeHtml(String(err)) + '</p>' +
-      '<p style="font-size:12.5px;color:var(--tenue)">Revisa tu conexión e intenta recargar la página.</p>';
+      '<p style="font-size:12.5px;color:var(--tenue)">Suele ser la conexión a internet ' +
+      '(se necesita para descargar el motor la primera vez). Revisa tu WiFi/datos e ' +
+      'inténtalo de nuevo.</p>' +
+      '<button id="btnReintentar" style="margin-top:8px">Reintentar</button>';
+    document.getElementById('btnReintentar').addEventListener('click', () => location.reload());
     clearBusy();
   }
 }
